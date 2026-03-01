@@ -7,7 +7,7 @@ This R Shiny application models the 10-year sustainability of the Red Sea ecosys
 ## Key Features
 - **Predictive Modeling:** Calculates biomass recovery based on SST and fishing effort.
 - **Live Geospatial Mapping:** Uses Leaflet for real-time risk visualization.
-- **Data Harmonization:** Merges species occurrence (OBIS) and climate data (NOAA).
+- **Data Harmonization:** Merges Sea Surface Temperature (SST), fishing effort, and coral cover, into a unified master data.
 
 ## How to Run
 Ensure you have R and RStudio installed. You will also need the following packages:
