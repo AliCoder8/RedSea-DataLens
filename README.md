@@ -13,3 +13,7 @@ This R Shiny application models the 10-year sustainability of the Red Sea ecosys
 Ensure you have R and RStudio installed. You will also need the following packages:
 
 ```install.packages(c("shiny", "leaflet", "dplyr", "ggplot2", "bslib", "robis", "rerddap"))```
+
+<img width="939" height="600" alt="red_sea_1" src="https://github.com/user-attachments/assets/80d5c4cf-e519-4d5c-9cb1-a5af08d0ff37" />
+
+<img width="939" height="600" alt="red_sea_2" src="https://github.com/user-attachments/assets/000cf234-62c9-4223-b537-cc3650fb1fdd" />
