@@ -95,8 +95,84 @@ ui <- page_sidebar(
 )
 
 # ==========================================
-# 4. SERVER LOGIC (To Commit)
+# 4. SHINY SERVER LOGIC
 # ==========================================
+server <- function(input, output, session) {
+  
+  # Reactive data: Update projections dynamically as sliders move
+  dynamic_data <- reactive({
+    data <- reef_data %>%
+      mutate(
+        Projected_Biomass = mapply(calculate_projection, 
+                                   Base_Fish_Biomass, 
+                                   input$sst_slider, 
+                                   input$effort_slider, 
+                                   Coral_Cover_Pct)
+      )
+    return(data)
+  })
+  
+  # Render the base Leaflet Map
+  output$reef_map <- renderLeaflet({
+    leaflet(reef_data) %>%
+      addProviderTiles(providers$CartoDB.Positron) %>%
+      setView(lng = 38.0, lat = 21.5, zoom = 5) # Centered on Red Sea
+  })
+  
+  observe({
+    data <- dynamic_data()
+    
+    # Create a color palette based on Coral Cover for the markers
+    pal <- colorNumeric(palette = "RdYlGn", domain = c(0, 100))
+    
+    leafletProxy("reef_map", data = data) %>%
+      clearMarkers() %>%
+      addCircleMarkers(
+        ~Lng, ~Lat,
+        layerId = ~Zone, # Used to capture clicks
+        radius = ~Coral_Cover_Pct / 4,
+        color = ~pal(Coral_Cover_Pct),
+        stroke = FALSE, fillOpacity = 0.8,
+        label = ~paste(Zone, "| Coral Cover:", Coral_Cover_Pct, "%"),
+        popup = ~paste("<b>", Zone, "</b><br>",
+                       "Base Biomass:", Base_Fish_Biomass, "MT/km2<br>",
+                       "Projected Biomass:", round(Projected_Biomass, 0), "MT/km2")
+      ) %>%
+      addLegend("bottomright", pal = pal, values = c(0, 100),
+                title = "Coral Cover (%)", opacity = 1, layerId = "legend")
+  })
+  
+  # React to Map Clicks to render a specific zone's comparison plot
+  output$dynamic_plot_card <- renderUI({
+    req(input$reef_map_marker_click)
+    
+    card(
+      card_header(paste("Biomass Projection for:", input$reef_map_marker_click$id)),
+      plotOutput("biomass_plot", height = "300px")
+    )
+  })
+  
+  output$biomass_plot <- renderPlot({
+    req(input$reef_map_marker_click)
+    selected_zone <- input$reef_map_marker_click$id
+    
+    zone_data <- dynamic_data() %>% filter(Zone == selected_zone)
+    
+    # Prepare data for ggplot
+    plot_data <- data.frame(
+      Timeframe = factor(c("Current (Base)", "10-Year Projection"), levels = c("Current (Base)", "10-Year Projection")),
+      Biomass = c(zone_data$Base_Fish_Biomass, zone_data$Projected_Biomass)
+    )
+    
+    ggplot(plot_data, aes(x = Timeframe, y = Biomass, fill = Timeframe)) +
+      geom_bar(stat = "identity", width = 0.5) +
+      scale_fill_manual(values = c("#3498db", "#2ecc71")) +
+      theme_minimal() +
+      labs(y = expression("Fish Biomass (MT/" ~ km^2 ~ ")"), x = "") +
+      theme(legend.position = "none", text = element_text(size = 14)) +
+      geom_text(aes(label = round(Biomass, 0)), vjust = -0.5, size = 5)
+  })
+}
 
 # Run the application 
 shinyApp(ui = ui, server = server)
